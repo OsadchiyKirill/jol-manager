@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "jol-manager",
+    "name": "JOL Manager",
     "slug": "jol-manager",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,14 +9,18 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#E05A3A"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.t10solutions.jolmanager",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Для швидкого входу в JOL Manager"
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#E05A3A",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -28,7 +32,20 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Для швидкого входу в JOL Manager"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#E05A3A"
+        }
+      ]
     ]
   }
 }

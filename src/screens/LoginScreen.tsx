@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,11 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
+import * as LocalAuthentication from 'expo-local-authentication';
 import client from '../api/client';
+import { COLORS, TYPOGRAPHY, SPACING } from '../utils/colors';
 
 interface LoginScreenProps {
   onLoginSuccess: () => void;
@@ -21,6 +24,34 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [canUseFaceId, setCanUseFaceId] = useState(false);
+
+  useEffect(() => {
+    checkFaceId();
+  }, []);
+
+  const checkFaceId = async () => {
+    const faceIdEnabled = await SecureStore.getItemAsync('faceid_enabled');
+    const token = await SecureStore.getItemAsync('auth_token');
+    const hasHardware = await LocalAuthentication.hasHardwareAsync();
+    const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+    setCanUseFaceId(faceIdEnabled === 'true' && !!token && hasHardware && isEnrolled);
+  };
+
+  const handleFaceIdLogin = async () => {
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Увійти в JOL Manager',
+        cancelLabel: 'Скасувати',
+        disableDeviceFallback: false,
+      });
+      if (result.success) {
+        onLoginSuccess();
+      }
+    } catch (error) {
+      Alert.alert('Помилка', 'Face ID не вдалося');
+    }
+  };
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -33,6 +64,26 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       const response = await client.post('/auth/login', { email, password });
       const { token } = response.data;
       await SecureStore.setItemAsync('auth_token', token);
+      await SecureStore.setItemAsync('user_email', email);
+
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      const faceIdEnabled = await SecureStore.getItemAsync('faceid_enabled');
+
+      if (hasHardware && isEnrolled && faceIdEnabled !== 'true') {
+        Alert.alert(
+          'Face ID',
+          'Увійти через Face ID наступного разу?',
+          [
+            { text: 'Ні', style: 'cancel' },
+            {
+              text: 'Так',
+              onPress: () => SecureStore.setItemAsync('faceid_enabled', 'true'),
+            },
+          ]
+        );
+      }
+
       onLoginSuccess();
     } catch (error: any) {
       const message =
@@ -55,7 +106,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         <TextInput
           style={styles.input}
           placeholder="Email"
-          placeholderTextColor="#999"
+          placeholderTextColor={COLORS.textTertiary}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -66,7 +117,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         <TextInput
           style={styles.input}
           placeholder="Пароль"
-          placeholderTextColor="#999"
+          placeholderTextColor={COLORS.textTertiary}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -83,6 +134,13 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             <Text style={styles.buttonText}>Увійти</Text>
           )}
         </TouchableOpacity>
+
+        {canUseFaceId && (
+          <TouchableOpacity style={styles.faceIdBtn} onPress={handleFaceIdLogin}>
+            <Ionicons name="finger-print" size={28} color={COLORS.purple} />
+            <Text style={styles.faceIdText}>Увійти через Face ID</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -91,49 +149,66 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f4f0',
+    backgroundColor: COLORS.background,
   },
   inner: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: SPACING.xxxl,
   },
   title: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#2c2c2c',
+    ...TYPOGRAPHY.h1,
+    color: COLORS.textPrimary,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 18,
-    color: '#8b7355',
+    ...TYPOGRAPHY.h3,
+    color: COLORS.coral,
     textAlign: 'center',
     marginBottom: 48,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.lg,
     paddingVertical: 14,
-    fontSize: 16,
-    marginBottom: 16,
+    ...TYPOGRAPHY.body,
+    marginBottom: SPACING.lg,
     borderWidth: 1,
-    borderColor: '#e0d6cc',
-    color: '#2c2c2c',
+    borderColor: COLORS.border,
+    color: COLORS.textPrimary,
   },
   button: {
-    backgroundColor: '#8b7355',
+    backgroundColor: COLORS.coral,
     borderRadius: 12,
-    paddingVertical: 16,
+    paddingVertical: SPACING.lg,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: SPACING.sm,
+    shadowColor: COLORS.coral,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 17,
     fontWeight: '600',
+  },
+  faceIdBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    marginTop: SPACING.xxl,
+    paddingVertical: SPACING.lg,
+  },
+  faceIdText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.purple,
+    fontWeight: '500',
   },
 });

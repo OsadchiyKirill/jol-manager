@@ -1,83 +1,135 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { COLORS, TYPOGRAPHY, SPACING } from '../utils/colors';
+import type { Visit } from '../types';
 
-interface Visit {
-  id: number;
-  clientName: string;
-  masterName: string;
-  serviceName: string;
-  time: string;
-  status: string;
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  confirmed: '#4caf50',
-  pending: '#ff9800',
-  cancelled: '#f44336',
-  completed: '#8b7355',
+const VISIT_STATUS_COLORS: Record<string, { bg: string; border: string }> = {
+  '1': { bg: COLORS.purpleLight, border: COLORS.purple },
+  '2': { bg: COLORS.successLight, border: COLORS.success },
+  '3': { bg: '#F5F5F5', border: COLORS.textTertiary },
+  '4': { bg: COLORS.dangerLight, border: COLORS.danger },
+  '5': { bg: COLORS.warningLight, border: COLORS.warning },
+  confirmed: { bg: COLORS.purpleLight, border: COLORS.purple },
+  completed: { bg: '#F5F5F5', border: COLORS.textTertiary },
+  cancelled: { bg: COLORS.dangerLight, border: COLORS.danger },
+  pending: { bg: COLORS.warningLight, border: COLORS.warning },
 };
 
-export default function VisitCard({ visit }: { visit: Visit }) {
-  const statusColor = STATUS_COLORS[visit.status] || '#999';
+interface VisitCardProps {
+  visit: Visit;
+  index?: number;
+  onPress?: () => void;
+}
+
+export default function VisitCard({ visit, index = 0, onPress }: VisitCardProps) {
+  const statusStyle = VISIT_STATUS_COLORS[visit.status] || {
+    bg: COLORS.surface,
+    border: COLORS.border,
+  };
+  const isNew = visit.client_vizits === 0;
+
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onPress?.();
+  };
 
   return (
-    <View style={styles.card}>
-      <View style={styles.timeContainer}>
-        <Text style={styles.time}>{visit.time}</Text>
-        <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-      </View>
-      <View style={styles.details}>
-        <Text style={styles.clientName}>{visit.clientName}</Text>
-        <Text style={styles.service}>{visit.serviceName}</Text>
-        <Text style={styles.master}>{visit.masterName}</Text>
-      </View>
-    </View>
+    <Animated.View entering={FadeInDown.delay(index * 50).duration(300)}>
+      <TouchableOpacity
+        onPress={handlePress}
+        activeOpacity={0.7}
+        style={[
+          styles.card,
+          { backgroundColor: statusStyle.bg, borderLeftColor: statusStyle.border },
+        ]}
+      >
+        <View style={styles.header}>
+          <Text style={styles.time}>{visit.time}</Text>
+          {isNew && (
+            <View style={styles.newBadge}>
+              <Text style={styles.newBadgeText}>NEW</Text>
+            </View>
+          )}
+          {visit.duration > 0 && (
+            <Text style={styles.duration}>{visit.duration} хв</Text>
+          )}
+        </View>
+        <Text style={styles.clientName}>{visit.client_name}</Text>
+        <Text style={styles.service}>{visit.service_name}</Text>
+        <View style={styles.footer}>
+          <Text style={styles.master}>{visit.master_name_ua}</Text>
+          {visit.total > 0 && (
+            <Text style={styles.price}>{visit.total}€</Text>
+          )}
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#e0d6cc',
+    borderRadius: 8,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
+    borderLeftWidth: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  timeContainer: {
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-    minWidth: 50,
+    marginBottom: SPACING.xs,
   },
   time: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#2c2c2c',
+    ...TYPOGRAPHY.h3,
+    color: COLORS.textPrimary,
   },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginTop: 6,
+  newBadge: {
+    backgroundColor: COLORS.successLight,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 2,
+    borderRadius: 20,
+    marginLeft: SPACING.sm,
   },
-  details: {
-    flex: 1,
+  newBadgeText: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.success,
+    fontWeight: '600',
+  },
+  duration: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textTertiary,
+    marginLeft: 'auto',
   },
   clientName: {
-    fontSize: 16,
+    ...TYPOGRAPHY.body,
     fontWeight: '600',
-    color: '#2c2c2c',
+    color: COLORS.textPrimary,
   },
   service: {
-    fontSize: 14,
-    color: '#666',
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: SPACING.xs,
+  },
   master: {
-    fontSize: 13,
-    color: '#8b7355',
-    marginTop: 2,
+    ...TYPOGRAPHY.caption,
+    color: COLORS.purple,
+  },
+  price: {
+    ...TYPOGRAPHY.bodySmall,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
   },
 });

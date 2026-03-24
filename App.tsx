@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import * as SecureStore from 'expo-secure-store';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import LoginScreen from './src/screens/LoginScreen';
 import AppNavigator from './src/navigation/AppNavigator';
+import OfflineBanner from './src/components/ui/OfflineBanner';
 import client from './src/api/client';
 import type { RootStackParamList } from './src/types';
 
@@ -93,17 +95,25 @@ export default function App() {
 
   if (!isAuthenticated) {
     return (
-      <>
+      <GestureHandlerRootView style={styles.flex}>
         <StatusBar style="dark" />
+        <OfflineBanner />
         <LoginScreen onLoginSuccess={() => setIsAuthenticated(true)} />
-      </>
+      </GestureHandlerRootView>
     );
   }
 
   return (
-    <NavigationContainer ref={navigationRef}>
-      <StatusBar style="dark" />
-      <AppNavigator onLogout={handleLogout} />
-    </NavigationContainer>
+    <GestureHandlerRootView style={styles.flex}>
+      <NavigationContainer ref={navigationRef}>
+        <StatusBar style="dark" />
+        <OfflineBanner />
+        <AppNavigator onLogout={handleLogout} />
+      </NavigationContainer>
+    </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+});

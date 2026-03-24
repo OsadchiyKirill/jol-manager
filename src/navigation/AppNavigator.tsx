@@ -1,27 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
-import { View, Text, StyleSheet } from 'react-native';
 import TodayScreen from '../screens/TodayScreen';
 import ScheduleScreen from '../screens/ScheduleScreen';
 import DialogsScreen from '../screens/DialogsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import ChatScreen from '../screens/ChatScreen';
 import VisitDetailScreen from '../screens/VisitDetailScreen';
+import { TodayIcon, ScheduleIcon, DialogsIcon, SettingsIcon } from '../components/ui/TabIcons';
 import { COLORS, TYPOGRAPHY } from '../utils/colors';
 import client from '../api/client';
 import type { RootStackParamList } from '../types';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator<RootStackParamList>();
-
-const TAB_ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
-  Today: { active: 'home', inactive: 'home-outline' },
-  Schedule: { active: 'calendar', inactive: 'calendar-outline' },
-  Dialogs: { active: 'chatbubbles', inactive: 'chatbubbles-outline' },
-  Settings: { active: 'person', inactive: 'person-outline' },
-};
 
 function TabNavigator({ onLogout }: { onLogout: () => void }) {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -42,12 +34,7 @@ function TabNavigator({ onLogout }: { onLogout: () => void }) {
 
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          const icons = TAB_ICONS[route.name];
-          const iconName = focused ? icons?.active : icons?.inactive;
-          return <Ionicons name={iconName || 'help'} size={22} color={color} />;
-        },
+      screenOptions={{
         tabBarActiveTintColor: COLORS.coral,
         tabBarInactiveTintColor: COLORS.textTertiary,
         tabBarStyle: {
@@ -66,23 +53,30 @@ function TabNavigator({ onLogout }: { onLogout: () => void }) {
         },
         headerTintColor: COLORS.textPrimary,
         headerTitleStyle: { ...TYPOGRAPHY.h3 },
-      })}
+      }}
     >
       <Tab.Screen
         name="Today"
         component={TodayScreen}
-        options={{ title: 'Сьогодні' }}
+        options={{
+          title: 'Сьогодні',
+          tabBarIcon: ({ color }) => <TodayIcon color={color} size={24} />,
+        }}
       />
       <Tab.Screen
         name="Schedule"
         component={ScheduleScreen}
-        options={{ title: 'Розклад' }}
+        options={{
+          title: 'Розклад',
+          tabBarIcon: ({ color }) => <ScheduleIcon color={color} size={24} />,
+        }}
       />
       <Tab.Screen
         name="Dialogs"
         component={DialogsScreen}
         options={{
           title: 'Діалоги',
+          tabBarIcon: ({ color }) => <DialogsIcon color={color} size={24} />,
           tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
           tabBarBadgeStyle: {
             backgroundColor: COLORS.coral,
@@ -93,7 +87,10 @@ function TabNavigator({ onLogout }: { onLogout: () => void }) {
       />
       <Tab.Screen
         name="Settings"
-        options={{ title: 'Налаштування' }}
+        options={{
+          title: 'Налаштування',
+          tabBarIcon: ({ color }) => <SettingsIcon color={color} size={24} />,
+        }}
       >
         {() => <SettingsScreen onLogout={onLogout} />}
       </Tab.Screen>

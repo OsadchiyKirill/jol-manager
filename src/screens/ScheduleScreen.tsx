@@ -4,15 +4,14 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
-  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import client from '../api/client';
 import VisitCard from '../components/VisitCard';
+import DateStrip from '../components/ui/DateStrip';
+import { ScheduleSkeleton } from '../components/ui/SkeletonLoader';
 import { COLORS, TYPOGRAPHY, SPACING } from '../utils/colors';
 import { formatDateMadrid } from '../utils/helpers';
 import type { Visit, RootStackParamList } from '../types';
@@ -27,7 +26,6 @@ export default function ScheduleScreen({ navigation }: ScheduleScreenProps) {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showPicker, setShowPicker] = useState(false);
 
   const fetchSchedule = async (date: Date) => {
     setLoading(true);
@@ -48,12 +46,6 @@ export default function ScheduleScreen({ navigation }: ScheduleScreenProps) {
     fetchSchedule(selectedDate);
   }, [selectedDate]);
 
-  const changeDate = (days: number) => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() + days);
-    setSelectedDate(newDate);
-  };
-
   const goToToday = () => setSelectedDate(new Date());
 
   const onRefresh = () => {
@@ -61,68 +53,31 @@ export default function ScheduleScreen({ navigation }: ScheduleScreenProps) {
     fetchSchedule(selectedDate);
   };
 
-  const onDateChange = (_event: DateTimePickerEvent, date?: Date) => {
-    setShowPicker(Platform.OS === 'ios');
-    if (date) setSelectedDate(date);
-  };
-
   const dateStr = formatDateMadrid(selectedDate);
   const todayStr = formatDateMadrid(new Date());
   const isToday = dateStr === todayStr;
-  const dayName = selectedDate.toLocaleDateString('uk-UA', {
-    weekday: 'short',
+
+  const monthLabel = selectedDate.toLocaleDateString('uk-UA', {
     day: 'numeric',
     month: 'long',
   });
 
   return (
     <View style={styles.container}>
-      <View style={styles.dateNav}>
-        <TouchableOpacity
-          onPress={() => changeDate(-1)}
-          style={styles.navBtn}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <Ionicons name="chevron-back" size={24} color={COLORS.coral} />
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.dateInfo}>
-          <Text style={styles.dateText}>
-            {isToday ? 'Сьогодні' : dateStr}
-          </Text>
-          <Text style={styles.dayName}>{dayName}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => changeDate(1)}
-          style={styles.navBtn}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <Ionicons name="chevron-forward" size={24} color={COLORS.coral} />
-        </TouchableOpacity>
+      <View style={styles.headerRow}>
+        <Text style={styles.monthLabel}>{monthLabel}</Text>
+        {!isToday && (
+          <TouchableOpacity onPress={goToToday} style={styles.todayBtn}>
+            <Ionicons name="today" size={14} color={COLORS.coral} />
+            <Text style={styles.todayBtnText}>Сьогодні</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      {!isToday && (
-        <TouchableOpacity onPress={goToToday} style={styles.todayBtn}>
-          <Ionicons name="today" size={16} color={COLORS.coral} />
-          <Text style={styles.todayBtnText}>Сьогодні</Text>
-        </TouchableOpacity>
-      )}
-
-      {showPicker && (
-        <DateTimePicker
-          value={selectedDate}
-          mode="date"
-          display="spinner"
-          locale="uk"
-          onChange={onDateChange}
-        />
-      )}
+      <DateStrip selectedDate={selectedDate} onDateChange={setSelectedDate} />
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={COLORS.coral} />
-        </View>
+        <ScheduleSkeleton />
       ) : visits.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.emptyIcon}>📋</Text>
@@ -161,47 +116,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  dateNav: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm,
     backgroundColor: COLORS.surface,
-    borderBottomWidth: 0.5,
-    borderBottomColor: COLORS.border,
   },
-  navBtn: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dateInfo: {
-    alignItems: 'center',
-  },
-  dateText: {
+  monthLabel: {
     ...TYPOGRAPHY.h3,
     color: COLORS.textPrimary,
-  },
-  dayName: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginTop: 2,
   },
   todayBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'center',
     gap: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 20,
     backgroundColor: COLORS.coralLight,
-    marginTop: SPACING.sm,
   },
   todayBtnText: {
-    ...TYPOGRAPHY.bodySmall,
+    ...TYPOGRAPHY.caption,
     color: COLORS.coral,
     fontWeight: '500',
   },

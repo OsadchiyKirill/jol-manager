@@ -3,19 +3,21 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
-  ActivityIndicator,
+  SectionList,
   RefreshControl,
   TouchableOpacity,
   TextInput,
   ScrollView,
   Animated,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { Swipeable } from 'react-native-gesture-handler';
 import client from '../api/client';
 import Avatar from '../components/Avatar';
 import Badge from '../components/Badge';
+import { DialogsSkeleton } from '../components/ui/SkeletonLoader';
 import { COLORS, TYPOGRAPHY, SPACING } from '../utils/colors';
 import { formatRelativeTime } from '../utils/helpers';
 import type { Conversation, RootStackParamList } from '../types';
@@ -35,6 +37,36 @@ interface DialogsScreenProps {
   navigation: NativeStackNavigationProp<RootStackParamList>;
 }
 
+function groupByDate(conversations: Conversation[]) {
+  const now = new Date();
+  const todayStr = now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const yesterdayStr = yesterday.toDateString();
+  const weekAgo = new Date(now);
+  weekAgo.setDate(now.getDate() - 7);
+
+  const groups: Record<string, Conversation[]> = {
+    'Сьогодні': [],
+    'Вчора': [],
+    'Цього тижня': [],
+    'Раніше': [],
+  };
+
+  for (const conv of conversations) {
+    const d = new Date(conv.last_message_at);
+    const ds = d.toDateString();
+    if (ds === todayStr) groups['Сьогодні'].push(conv);
+    else if (ds === yesterdayStr) groups['Вчора'].push(conv);
+    else if (d > weekAgo) groups['Цього тижня'].push(conv);
+    else groups['Раніше'].push(conv);
+  }
+
+  return Object.entries(groups)
+    .filter(([, data]) => data.length > 0)
+    .map(([title, data]) => ({ title, data }));
+}
+
 function AnimatedRow({ index, children }: { index: number; children: React.ReactNode }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(20)).current;
@@ -42,10 +74,10 @@ function AnimatedRow({ index, children }: { index: number; children: React.React
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
-        toValue: 1, duration: 300, delay: index * 50, useNativeDriver: true,
+        toValue: 1, duration: 300, delay: Math.min(index, 10) * 50, useNativeDriver: true,
       }),
       Animated.timing(translateY, {
-        toValue: 0, duration: 300, delay: index * 50, useNativeDriver: true,
+        toValue: 0, duration: 300, delay: Math.min(index, 10) * 50, useNativeDriver: true,
       }),
     ]).start();
   }, []);
@@ -101,7 +133,11 @@ export default function DialogsScreen({ navigation }: DialogsScreenProps) {
 
   const handleFilterPress = (filterId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setActiveFilter(filterId);
+    if (activeFilter === filterId && filterId !== 'all') {
+      setActiveFilter('all');
+    } else {
+      setActiveFilter(filterId);
+    }
   };
 
   const onRefresh = () => {
@@ -118,33 +154,74 @@ export default function DialogsScreen({ navigation }: DialogsScreenProps) {
     });
   };
 
-  const renderDialog = ({ item, index }: { item: Conversation; index: number }) => (
-    <AnimatedRow index={index}>
-      <TouchableOpacity style={styles.row} onPress={() => openChat(item)} activeOpacity={0.7}>
-        <Avatar name={item.client_name} channel={item.channel} size={44} />
-        <View style={styles.rowContent}>
-          <View style={styles.rowHeader}>
-            <Text style={styles.rowName} numberOfLines={1}>
-              {item.client_name || item.client_phone || item.user_id}
-            </Text>
-            <Badge
-              label={item.status === 'operator' ? 'Admin' : 'Міла'}
-              type={item.status === 'operator' ? 'admin' : 'mila'}
-            />
-            <Text style={styles.rowTime}>{formatRelativeTime(item.last_message_at)}</Text>
-          </View>
-          <Text style={styles.rowPreview} numberOfLines={1}>
-            {item.last_message_text || 'Немає повідомлень'}
-          </Text>
-        </View>
-        {item.unread_count > 0 && (
-          <View style={styles.unreadBadge}>
-            <Text style={styles.unreadText}>{item.unread_count}</Text>
-          </View>
-        )}
-      </TouchableOpacity>
-    </AnimatedRow>
+  const deleteConversation = (conv: Conversation) => {
+    Alert.alert(
+      'Видалити діалог?',
+      `Видалити всю історію з ${conv.client_name || conv.user_id}?`,
+      [
+        { text: 'Скасувати', style: 'cancel' },
+        {
+          text: 'Видалити',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await client.delete(`/conversations/${conv.user_id}`);
+              setConversations(prev => prev.filter(c => c.user_id !== conv.user_id));
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } catch {
+              Alert.alert('Помилка', 'Не вдалося видалити діалог');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const renderSwipeActions = (conv: Conversation) => () => (
+    <TouchableOpacity
+      style={styles.deleteAction}
+      onPress={() => deleteConversation(conv)}
+    >
+      <Ionicons name="trash-outline" size={22} color="#fff" />
+      <Text style={styles.deleteText}>Видалити</Text>
+    </TouchableOpacity>
   );
+
+  const sections = groupByDate(conversations);
+  let globalIndex = 0;
+
+  const renderDialog = ({ item }: { item: Conversation }) => {
+    const idx = globalIndex++;
+    return (
+      <AnimatedRow index={idx}>
+        <Swipeable renderRightActions={renderSwipeActions(item)} overshootRight={false}>
+          <TouchableOpacity style={styles.row} onPress={() => openChat(item)} activeOpacity={0.7}>
+            <Avatar name={item.client_name} channel={item.channel} size={44} />
+            <View style={styles.rowContent}>
+              <View style={styles.rowHeader}>
+                <Text style={styles.rowName} numberOfLines={1}>
+                  {item.client_name || item.client_phone || item.user_id}
+                </Text>
+                <Badge
+                  label={item.status === 'operator' ? 'Admin' : 'Міла'}
+                  type={item.status === 'operator' ? 'admin' : 'mila'}
+                />
+                <Text style={styles.rowTime}>{formatRelativeTime(item.last_message_at)}</Text>
+              </View>
+              <Text style={styles.rowPreview} numberOfLines={1}>
+                {item.last_message_text || 'Немає повідомлень'}
+              </Text>
+            </View>
+            {item.unread_count > 0 && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadText}>{item.unread_count}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </Swipeable>
+      </AnimatedRow>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -185,9 +262,7 @@ export default function DialogsScreen({ navigation }: DialogsScreenProps) {
       </ScrollView>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={COLORS.coral} />
-        </View>
+        <DialogsSkeleton />
       ) : conversations.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.emptyIcon}>💬</Text>
@@ -197,11 +272,17 @@ export default function DialogsScreen({ navigation }: DialogsScreenProps) {
           </Text>
         </View>
       ) : (
-        <FlatList
-          data={conversations}
+        <SectionList
+          sections={sections}
           keyExtractor={(item, index) => `${item.user_id}-${item.channel}-${index}`}
           renderItem={renderDialog}
+          renderSectionHeader={({ section: { title } }) => (
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionHeaderText}>{title}</Text>
+            </View>
+          )}
           showsVerticalScrollIndicator={false}
+          stickySectionHeadersEnabled={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.coral} />
           }
@@ -269,6 +350,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '500',
   },
+  sectionHeader: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.background,
+  },
+  sectionHeaderText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -315,6 +407,18 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.label,
     color: '#fff',
     fontWeight: '700',
+  },
+  deleteAction: {
+    backgroundColor: COLORS.danger,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    paddingHorizontal: SPACING.md,
+  },
+  deleteText: {
+    ...TYPOGRAPHY.label,
+    color: '#fff',
+    marginTop: 2,
   },
   emptyIcon: {
     fontSize: 48,

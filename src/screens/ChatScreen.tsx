@@ -6,14 +6,17 @@ import {
   FlatList,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import client from '../api/client';
 import { COLORS, TYPOGRAPHY, SPACING } from '../utils/colors';
 import type { Message, RootStackParamList } from '../types';
@@ -39,6 +42,7 @@ export default function ChatScreen({ route, navigation }: Props) {
   const [sending, setSending] = useState(false);
   const [botActive, setBotActive] = useState(true);
   const flatListRef = useRef<FlatList>(null);
+  const insets = useSafeAreaInsets();
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -46,7 +50,8 @@ export default function ChatScreen({ route, navigation }: Props) {
         client.get(`/conversations/${userId}/messages`),
         client.get(`/conversations/${userId}`),
       ]);
-      setMessages(Array.isArray(msgRes.data) ? msgRes.data : []);
+      const msgs = Array.isArray(msgRes.data) ? msgRes.data : [];
+      setMessages(msgs.reverse());
       setBotActive(convRes.data.status === 'bot');
     } catch (error) {
       console.error('Failed to fetch messages:', error);
@@ -73,7 +78,7 @@ export default function ChatScreen({ route, navigation }: Props) {
           style={[styles.takeoverBtn, { backgroundColor: botActive ? COLORS.coralLight : COLORS.purpleLight }]}
         >
           <Text style={[styles.takeoverText, { color: botActive ? COLORS.coral : COLORS.purple }]}>
-            {botActive ? 'Зупинити бота' : 'Повернути Мілі'}
+            {botActive ? 'Зупинити' : 'Повернути'}
           </Text>
         </TouchableOpacity>
       ),
@@ -152,11 +157,11 @@ export default function ChatScreen({ route, navigation }: Props) {
         message: trimmed,
       });
       if (res.data.message) {
-        setMessages(prev => [...prev, res.data.message]);
+        setMessages(prev => [res.data.message, ...prev]);
       }
       setText('');
+      Keyboard.dismiss();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     } catch (error: any) {
       if (error.response?.status === 403) {
         Alert.alert('Помилка', 'Спершу потрібно перехопити діалог');
@@ -173,12 +178,18 @@ export default function ChatScreen({ route, navigation }: Props) {
     const isBot = item.sender_type === 'bot';
     const isOperator = item.sender_type === 'operator';
 
-    let bubbleColor = '#E8E8E8';
-    if (isBot) bubbleColor = COLORS.purpleLight;
-    else if (isOperator) bubbleColor = COLORS.coralLight;
+    const bubbleStyle = isClient
+      ? styles.bubbleClient
+      : isBot
+        ? styles.bubbleMila
+        : styles.bubbleAdmin;
 
+    const textColor = isClient ? COLORS.textPrimary : '#FFFFFF';
     const align = isClient ? 'flex-start' : 'flex-end';
-    const textColor = COLORS.textPrimary;
+
+    const cornerStyle = isClient
+      ? { borderBottomLeftRadius: 4 }
+      : { borderBottomRightRadius: 4 };
 
     const time = new Date(item.created_at).toLocaleTimeString('uk-UA', {
       hour: '2-digit',
@@ -188,16 +199,20 @@ export default function ChatScreen({ route, navigation }: Props) {
     return (
       <FadeInView>
         <View style={[styles.bubbleRow, { justifyContent: align }]}>
-          <View style={[styles.bubble, { backgroundColor: bubbleColor }]}>
+          <View>
             {!isClient && (
-              <Text style={styles.senderLabel}>
-                {isBot ? 'Міла' : 'Admin'}
+              <Text style={[styles.senderLabel, { textAlign: 'right' }]}>
+                {isBot ? '🤖 Міла' : '👤 Admin'}
               </Text>
             )}
-            <Text style={[styles.messageText, { color: textColor }]}>
-              {item.message_text}
+            <View style={[styles.bubble, bubbleStyle, cornerStyle]}>
+              <Text style={[styles.messageText, { color: textColor }]}>
+                {item.message_text}
+              </Text>
+            </View>
+            <Text style={[styles.messageTime, { textAlign: align === 'flex-end' ? 'right' : 'left' }]}>
+              {time}
             </Text>
-            <Text style={styles.messageTime}>{time}</Text>
           </View>
         </View>
       </FadeInView>
@@ -218,22 +233,24 @@ export default function ChatScreen({ route, navigation }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={90}
     >
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        keyExtractor={(item) => String(item.id)}
-        renderItem={renderMessage}
-        contentContainerStyle={styles.messageList}
-        showsVerticalScrollIndicator={false}
-        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
-        ListEmptyComponent={
-          <View style={styles.center}>
-            <Text style={styles.emptyText}>Немає повідомлень</Text>
-          </View>
-        }
-      />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderMessage}
+          contentContainerStyle={styles.messageList}
+          showsVerticalScrollIndicator={false}
+          inverted
+          ListEmptyComponent={
+            <View style={styles.emptyCenter}>
+              <Text style={styles.emptyText}>Немає повідомлень</Text>
+            </View>
+          }
+        />
+      </TouchableWithoutFeedback>
 
-      <View style={styles.inputBar}>
+      <View style={[styles.inputBar, { paddingBottom: Math.max(insets.bottom, SPACING.sm) }]}>
         <TextInput
           style={styles.input}
           placeholder={botActive ? 'Зупиніть бота для відправки...' : 'Написати повідомлення...'}
@@ -271,6 +288,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  emptyCenter: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 48,
+  },
   messageList: {
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
@@ -278,18 +301,28 @@ const styles = StyleSheet.create({
   },
   bubbleRow: {
     flexDirection: 'row',
-    marginBottom: SPACING.sm,
-  },
-  bubble: {
-    maxWidth: '78%',
-    borderRadius: 16,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    marginBottom: SPACING.md,
   },
   senderLabel: {
     ...TYPOGRAPHY.label,
     color: COLORS.textTertiary,
     marginBottom: 2,
+    paddingHorizontal: SPACING.xs,
+  },
+  bubble: {
+    maxWidth: 280,
+    borderRadius: 16,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+  },
+  bubbleClient: {
+    backgroundColor: COLORS.borderLight,
+  },
+  bubbleMila: {
+    backgroundColor: COLORS.purple,
+  },
+  bubbleAdmin: {
+    backgroundColor: COLORS.coral,
   },
   messageText: {
     ...TYPOGRAPHY.body,
@@ -297,17 +330,19 @@ const styles = StyleSheet.create({
   messageTime: {
     ...TYPOGRAPHY.label,
     color: COLORS.textTertiary,
-    alignSelf: 'flex-end',
-    marginTop: SPACING.xs,
+    marginTop: 2,
+    paddingHorizontal: SPACING.xs,
   },
   inputBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    padding: SPACING.md,
+    paddingTop: SPACING.sm,
+    paddingHorizontal: SPACING.md,
     backgroundColor: COLORS.surface,
     borderTopWidth: 0.5,
     borderTopColor: COLORS.border,
     gap: SPACING.sm,
+    minHeight: 56,
   },
   input: {
     flex: 1,
@@ -328,6 +363,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.coral,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 2,
   },
   sendBtnDisabled: {
     backgroundColor: COLORS.textDisabled,

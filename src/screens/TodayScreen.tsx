@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import client from '../api/client';
 import VisitCard from '../components/VisitCard';
+import { ScheduleSkeleton } from '../components/ui/SkeletonLoader';
 import { COLORS, TYPOGRAPHY, SPACING } from '../utils/colors';
 import { getGreeting, getTodayDateMadrid } from '../utils/helpers';
 import type { Visit } from '../types';
@@ -96,8 +97,8 @@ export default function TodayScreen({ navigation }: TodayScreenProps) {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={COLORS.coral} />
+      <View style={styles.container}>
+        <ScheduleSkeleton />
       </View>
     );
   }

@@ -1,8 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking, ScrollView } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, ScrollView, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import Animated, { SlideInRight } from 'react-native-reanimated';
 import Badge from '../components/Badge';
 import { COLORS, TYPOGRAPHY, SPACING } from '../utils/colors';
 import type { RootStackParamList } from '../types';
@@ -24,6 +23,19 @@ const STATUS_LABELS: Record<string, { label: string; type: 'default' | 'new' | '
 
 export default function VisitDetailScreen({ route }: Props) {
   const { visit } = route.params;
+  const slideAnim = useRef(new Animated.Value(100)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 0, duration: 250, useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1, duration: 250, useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const callClient = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -45,7 +57,7 @@ export default function VisitDetailScreen({ route }: Props) {
   })();
 
   return (
-    <Animated.View entering={SlideInRight.duration(250)} style={styles.container}>
+    <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateX: slideAnim }] }]}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.timeSection}>
           <Ionicons name="time-outline" size={24} color={COLORS.coral} />

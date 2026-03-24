@@ -1,7 +1,6 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { COLORS, TYPOGRAPHY, SPACING } from '../utils/colors';
 import type { Visit } from '../types';
 
@@ -24,6 +23,26 @@ interface VisitCardProps {
 }
 
 export default function VisitCard({ visit, index = 0, onPress }: VisitCardProps) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        delay: index * 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 300,
+        delay: index * 50,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   const statusStyle = VISIT_STATUS_COLORS[visit.status] || {
     bg: COLORS.surface,
     border: COLORS.border,
@@ -36,7 +55,7 @@ export default function VisitCard({ visit, index = 0, onPress }: VisitCardProps)
   };
 
   return (
-    <Animated.View entering={FadeInDown.delay(index * 50).duration(300)}>
+    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY }] }}>
       <TouchableOpacity
         onPress={handlePress}
         activeOpacity={0.7}

@@ -9,10 +9,10 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import client from '../api/client';
 import Avatar from '../components/Avatar';
 import Badge from '../components/Badge';
@@ -33,6 +33,28 @@ const FILTERS = [
 
 interface DialogsScreenProps {
   navigation: NativeStackNavigationProp<RootStackParamList>;
+}
+
+function AnimatedRow({ index, children }: { index: number; children: React.ReactNode }) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1, duration: 300, delay: index * 50, useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0, duration: 300, delay: index * 50, useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  return (
+    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY }] }}>
+      {children}
+    </Animated.View>
+  );
 }
 
 export default function DialogsScreen({ navigation }: DialogsScreenProps) {
@@ -97,7 +119,7 @@ export default function DialogsScreen({ navigation }: DialogsScreenProps) {
   };
 
   const renderDialog = ({ item, index }: { item: Conversation; index: number }) => (
-    <Animated.View entering={FadeInDown.delay(index * 50).duration(300)}>
+    <AnimatedRow index={index}>
       <TouchableOpacity style={styles.row} onPress={() => openChat(item)} activeOpacity={0.7}>
         <Avatar name={item.client_name} channel={item.channel} size={44} />
         <View style={styles.rowContent}>
@@ -121,7 +143,7 @@ export default function DialogsScreen({ navigation }: DialogsScreenProps) {
           </View>
         )}
       </TouchableOpacity>
-    </Animated.View>
+    </AnimatedRow>
   );
 
   return (

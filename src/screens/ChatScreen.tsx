@@ -10,16 +10,26 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeIn } from 'react-native-reanimated';
 import client from '../api/client';
 import { COLORS, TYPOGRAPHY, SPACING } from '../utils/colors';
 import type { Message, RootStackParamList } from '../types';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
+
+function FadeInView({ children }: { children: React.ReactNode }) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1, duration: 200, useNativeDriver: true,
+    }).start();
+  }, []);
+  return <Animated.View style={{ opacity: fadeAnim }}>{children}</Animated.View>;
+}
 
 export default function ChatScreen({ route, navigation }: Props) {
   const { userId, clientName, channel } = route.params;
@@ -71,7 +81,6 @@ export default function ChatScreen({ route, navigation }: Props) {
   }, [botActive, clientName]);
 
   const handleTakeover = async () => {
-    const action = botActive ? 'take' : 'release';
     const endpoint = botActive
       ? `/conversations/${userId}/takeover`
       : `/conversations/${userId}/release`;
@@ -177,19 +186,21 @@ export default function ChatScreen({ route, navigation }: Props) {
     });
 
     return (
-      <Animated.View entering={FadeIn.duration(200)} style={[styles.bubbleRow, { justifyContent: align }]}>
-        <View style={[styles.bubble, { backgroundColor: bubbleColor }]}>
-          {!isClient && (
-            <Text style={styles.senderLabel}>
-              {isBot ? 'Міла' : 'Admin'}
+      <FadeInView>
+        <View style={[styles.bubbleRow, { justifyContent: align }]}>
+          <View style={[styles.bubble, { backgroundColor: bubbleColor }]}>
+            {!isClient && (
+              <Text style={styles.senderLabel}>
+                {isBot ? 'Міла' : 'Admin'}
+              </Text>
+            )}
+            <Text style={[styles.messageText, { color: textColor }]}>
+              {item.message_text}
             </Text>
-          )}
-          <Text style={[styles.messageText, { color: textColor }]}>
-            {item.message_text}
-          </Text>
-          <Text style={styles.messageTime}>{time}</Text>
+            <Text style={styles.messageTime}>{time}</Text>
+          </View>
         </View>
-      </Animated.View>
+      </FadeInView>
     );
   };
 

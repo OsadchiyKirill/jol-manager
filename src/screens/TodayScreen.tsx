@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,11 @@ import {
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
+  Animated,
+  Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
 import client from '../api/client';
 import VisitCard from '../components/VisitCard';
 import { COLORS, TYPOGRAPHY, SPACING } from '../utils/colors';
@@ -31,10 +32,12 @@ export default function TodayScreen({ navigation }: TodayScreenProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
-  const rotation = useSharedValue(0);
-  const syncIconStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotation.value}deg` }],
-  }));
+  const rotation = useRef(new Animated.Value(0)).current;
+  const rotationAnim = useRef<Animated.CompositeAnimation | null>(null);
+  const spin = rotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   const today = getTodayDateMadrid();
 
@@ -66,7 +69,16 @@ export default function TodayScreen({ navigation }: TodayScreenProps) {
   const handleSync = async () => {
     setSyncing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    rotation.value = withRepeat(withTiming(360, { duration: 1000, easing: Easing.linear }), -1, false);
+    rotation.setValue(0);
+    rotationAnim.current = Animated.loop(
+      Animated.timing(rotation, {
+        toValue: 1,
+        duration: 1000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+    rotationAnim.current.start();
     try {
       await client.post('/sync/crm');
       await fetchData();
@@ -74,8 +86,9 @@ export default function TodayScreen({ navigation }: TodayScreenProps) {
     } catch (error) {
       console.error('Sync failed:', error);
     } finally {
+      rotationAnim.current?.stop();
+      rotation.setValue(0);
       setSyncing(false);
-      rotation.value = 0;
     }
   };
 
@@ -113,7 +126,7 @@ export default function TodayScreen({ navigation }: TodayScreenProps) {
                 <Text style={styles.dateText}>{today}</Text>
               </View>
               <TouchableOpacity onPress={handleSync} style={styles.syncBtn} disabled={syncing}>
-                <Animated.View style={syncIconStyle}>
+                <Animated.View style={{ transform: [{ rotate: spin }] }}>
                   <Ionicons name="sync" size={16} color={COLORS.purple} />
                 </Animated.View>
                 <Text style={styles.syncText}>{syncing ? 'Синк...' : 'Синк'}</Text>

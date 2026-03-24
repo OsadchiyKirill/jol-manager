@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SecureStore from 'expo-secure-store';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { Platform, StyleSheet } from 'react-native';
 import LoginScreen from './src/screens/LoginScreen';
 import AppNavigator from './src/navigation/AppNavigator';
@@ -73,7 +74,13 @@ export default function App() {
       }
       if (finalStatus !== 'granted') return;
 
-      const tokenData = await Notifications.getExpoPushTokenAsync();
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+      if (!projectId) {
+        console.warn('No EAS projectId — push notifications disabled in development');
+        return;
+      }
+
+      const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
       await client.post('/push-token', {
         token: tokenData.data,
         platform: Platform.OS,
@@ -81,7 +88,7 @@ export default function App() {
 
       await SecureStore.setItemAsync('push_enabled', 'true');
     } catch (error) {
-      console.error('Push registration failed:', error);
+      console.warn('Push registration skipped:', (error as Error).message);
     }
   };
 

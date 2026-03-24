@@ -15,7 +15,7 @@ import * as Haptics from 'expo-haptics';
 import client from '../api/client';
 import VisitCard from '../components/VisitCard';
 import { ScheduleSkeleton } from '../components/ui/SkeletonLoader';
-import { CalendarIcon, PersonPlusIcon, ChatBubbleIcon, LightningIcon, ClipboardEmptyIcon } from '../components/ui/DashboardIcons';
+import { CalendarIcon, PersonPlusIcon, ChatBubbleIcon, LightningIcon, EmptyScheduleIcon, StatIconCircle } from '../components/ui/DashboardIcons';
 import { COLORS, TYPOGRAPHY, SPACING } from '../utils/colors';
 import { getGreeting, getTodayDateMadrid } from '../utils/helpers';
 import type { Visit } from '../types';
@@ -140,12 +140,16 @@ export default function TodayScreen({ navigation }: TodayScreenProps) {
                 style={styles.statCard}
                 onPress={() => (navigation as any).navigate('Schedule')}
               >
-                <CalendarIcon color={COLORS.coral} size={22} />
+                <StatIconCircle color={COLORS.coral}>
+                  <CalendarIcon color={COLORS.coral} size={22} />
+                </StatIconCircle>
                 <Text style={styles.statValue}>{visits.length}</Text>
                 <Text style={styles.statLabel}>Записів</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.statCard}>
-                <PersonPlusIcon color={COLORS.purple} size={22} />
+                <StatIconCircle color={COLORS.purple}>
+                  <PersonPlusIcon color={COLORS.purple} size={22} />
+                </StatIconCircle>
                 <Text style={styles.statValue}>{newClientsCount}</Text>
                 <Text style={styles.statLabel}>Нових</Text>
               </TouchableOpacity>
@@ -153,7 +157,9 @@ export default function TodayScreen({ navigation }: TodayScreenProps) {
                 style={styles.statCard}
                 onPress={() => (navigation as any).navigate('Dialogs')}
               >
-                <ChatBubbleIcon color={COLORS.textSecondary} size={22} />
+                <StatIconCircle color={COLORS.textSecondary}>
+                  <ChatBubbleIcon color={COLORS.textSecondary} size={22} />
+                </StatIconCircle>
                 <Text style={styles.statValue}>{dialogCount}</Text>
                 <Text style={styles.statLabel}>Діалогів</Text>
               </TouchableOpacity>
@@ -161,7 +167,9 @@ export default function TodayScreen({ navigation }: TodayScreenProps) {
                 style={styles.statCard}
                 onPress={() => (navigation as any).navigate('Dialogs')}
               >
-                <LightningIcon color={COLORS.warning} size={22} />
+                <StatIconCircle color={COLORS.warning}>
+                  <LightningIcon color={COLORS.warning} size={22} />
+                </StatIconCircle>
                 <Text style={styles.statValue}>{takeoverCount}</Text>
                 <Text style={styles.statLabel}>Перехватів</Text>
               </TouchableOpacity>
@@ -172,7 +180,7 @@ export default function TodayScreen({ navigation }: TodayScreenProps) {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <ClipboardEmptyIcon color={COLORS.coral} size={64} />
+            <EmptyScheduleIcon size={64} />
             <Text style={styles.emptyTitle}>Немає записів на сьогодні</Text>
             <Text style={styles.emptySubtitle}>Потягніть вниз для оновлення</Text>
           </View>

@@ -30,6 +30,11 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "extra": {
+      "eas": {
+        "projectId": "jol-manager"
+      }
+    },
     "plugins": [
       "expo-secure-store",
       "expo-font",

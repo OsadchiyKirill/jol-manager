@@ -12,6 +12,7 @@ import client from '../api/client';
 import VisitCard from '../components/VisitCard';
 import DateStrip from '../components/ui/DateStrip';
 import { ScheduleSkeleton } from '../components/ui/SkeletonLoader';
+import { EmptyScheduleIcon } from '../components/ui/DashboardIcons';
 import { COLORS, TYPOGRAPHY, SPACING } from '../utils/colors';
 import { formatDateMadrid } from '../utils/helpers';
 import type { Visit, RootStackParamList } from '../types';
@@ -80,7 +81,7 @@ export default function ScheduleScreen({ navigation }: ScheduleScreenProps) {
         <ScheduleSkeleton />
       ) : visits.length === 0 ? (
         <View style={styles.center}>
-          <Text style={styles.emptyIcon}>📋</Text>
+          <EmptyScheduleIcon size={64} />
           <Text style={styles.emptyTitle}>Немає записів</Text>
           <Text style={styles.emptySubtitle}>На цей день записів не знайдено</Text>
         </View>
@@ -145,10 +146,6 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: SPACING.lg,
   },
   emptyTitle: {
     ...TYPOGRAPHY.h3,

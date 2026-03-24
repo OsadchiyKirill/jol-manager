@@ -323,16 +323,17 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
   },
   filtersScroll: {
-    maxHeight: 44,
+    flexGrow: 0,
   },
   filtersContent: {
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
     gap: SPACING.sm,
+    alignItems: 'center',
   },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -343,7 +344,8 @@ const styles = StyleSheet.create({
     borderColor: COLORS.coral,
   },
   chipText: {
-    ...TYPOGRAPHY.caption,
+    fontSize: 13,
+    fontWeight: '500',
     color: COLORS.textSecondary,
   },
   chipTextActive: {

@@ -5,15 +5,18 @@ import { COLORS, TYPOGRAPHY, SPACING } from '../utils/colors';
 import type { Visit } from '../types';
 
 const VISIT_STATUS_COLORS: Record<string, { bg: string; border: string }> = {
-  '1': { bg: COLORS.purpleLight, border: COLORS.purple },
-  '2': { bg: COLORS.successLight, border: COLORS.success },
-  '3': { bg: '#F5F5F5', border: COLORS.textTertiary },
-  '4': { bg: COLORS.dangerLight, border: COLORS.danger },
-  '5': { bg: COLORS.warningLight, border: COLORS.warning },
-  confirmed: { bg: COLORS.purpleLight, border: COLORS.purple },
-  completed: { bg: '#F5F5F5', border: COLORS.textTertiary },
-  cancelled: { bg: COLORS.dangerLight, border: COLORS.danger },
-  pending: { bg: COLORS.warningLight, border: COLORS.warning },
+  '1': { bg: '#EEE8F5', border: '#7B52AB' },
+  '2': { bg: '#FEFCE8', border: '#EAB308' },
+  '3': { bg: '#F0FFF4', border: '#48BB78' },
+  '4': { bg: '#FEF2F2', border: '#E24B4A' },
+  '5': { bg: '#F5F5F5', border: '#9CA3AF' },
+  '6': { bg: '#EEE8F5', border: '#7B52AB' },
+  '7': { bg: '#FDF3F0', border: '#E05A3A' },
+  '21': { bg: '#F5F5F5', border: '#6B7280' },
+  confirmed: { bg: '#EEE8F5', border: '#7B52AB' },
+  completed: { bg: '#F0FFF4', border: '#48BB78' },
+  cancelled: { bg: '#FEF2F2', border: '#E24B4A' },
+  pending: { bg: '#FEFCE8', border: '#EAB308' },
 };
 
 interface VisitCardProps {

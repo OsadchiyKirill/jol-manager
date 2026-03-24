@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import client from '../api/client';
 import VisitCard from '../components/VisitCard';
 import { ScheduleSkeleton } from '../components/ui/SkeletonLoader';
+import { CalendarIcon, PersonPlusIcon, ChatBubbleIcon, LightningIcon, ClipboardEmptyIcon } from '../components/ui/DashboardIcons';
 import { COLORS, TYPOGRAPHY, SPACING } from '../utils/colors';
 import { getGreeting, getTodayDateMadrid } from '../utils/helpers';
 import type { Visit } from '../types';
@@ -139,12 +140,12 @@ export default function TodayScreen({ navigation }: TodayScreenProps) {
                 style={styles.statCard}
                 onPress={() => (navigation as any).navigate('Schedule')}
               >
-                <Text style={styles.statEmoji}>📅</Text>
+                <CalendarIcon color={COLORS.coral} size={22} />
                 <Text style={styles.statValue}>{visits.length}</Text>
                 <Text style={styles.statLabel}>Записів</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.statCard}>
-                <Text style={styles.statEmoji}>👤</Text>
+                <PersonPlusIcon color={COLORS.purple} size={22} />
                 <Text style={styles.statValue}>{newClientsCount}</Text>
                 <Text style={styles.statLabel}>Нових</Text>
               </TouchableOpacity>
@@ -152,7 +153,7 @@ export default function TodayScreen({ navigation }: TodayScreenProps) {
                 style={styles.statCard}
                 onPress={() => (navigation as any).navigate('Dialogs')}
               >
-                <Text style={styles.statEmoji}>💬</Text>
+                <ChatBubbleIcon color={COLORS.textSecondary} size={22} />
                 <Text style={styles.statValue}>{dialogCount}</Text>
                 <Text style={styles.statLabel}>Діалогів</Text>
               </TouchableOpacity>
@@ -160,7 +161,7 @@ export default function TodayScreen({ navigation }: TodayScreenProps) {
                 style={styles.statCard}
                 onPress={() => (navigation as any).navigate('Dialogs')}
               >
-                <Text style={styles.statEmoji}>⚡</Text>
+                <LightningIcon color={COLORS.warning} size={22} />
                 <Text style={styles.statValue}>{takeoverCount}</Text>
                 <Text style={styles.statLabel}>Перехватів</Text>
               </TouchableOpacity>
@@ -171,7 +172,7 @@ export default function TodayScreen({ navigation }: TodayScreenProps) {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>📅</Text>
+            <ClipboardEmptyIcon color={COLORS.coral} size={64} />
             <Text style={styles.emptyTitle}>Немає записів на сьогодні</Text>
             <Text style={styles.emptySubtitle}>Потягніть вниз для оновлення</Text>
           </View>
@@ -247,10 +248,6 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
-  statEmoji: {
-    fontSize: 20,
-    marginBottom: SPACING.xs,
-  },
   statValue: {
     ...TYPOGRAPHY.h2,
     color: COLORS.textPrimary,
@@ -267,10 +264,6 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: 48,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: SPACING.lg,
   },
   emptyTitle: {
     ...TYPOGRAPHY.h3,

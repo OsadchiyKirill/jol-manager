@@ -2,24 +2,29 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking, ScrollView, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import Badge from '../components/Badge';
+import Badge from '../components/Badge'; // used for NEW/VIP badges
 import { COLORS, TYPOGRAPHY, SPACING } from '../utils/colors';
 import type { RootStackParamList } from '../types';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'VisitDetail'>;
 
-const STATUS_LABELS: Record<string, { label: string; type: 'default' | 'new' | 'vip' | 'admin' | 'mila' }> = {
-  '1': { label: 'Підтверджено', type: 'mila' },
-  '2': { label: 'Клієнт прийшов', type: 'new' },
-  '3': { label: 'Завершено', type: 'default' },
-  '4': { label: 'Скасовано', type: 'admin' },
-  '5': { label: 'Не прийшов', type: 'admin' },
-  confirmed: { label: 'Підтверджено', type: 'mila' },
-  completed: { label: 'Завершено', type: 'default' },
-  cancelled: { label: 'Скасовано', type: 'admin' },
-  pending: { label: 'Очікує', type: 'default' },
+const VISIT_STATUS: Record<string, { label: string; color: string; bg: string }> = {
+  '1': { label: 'Підтверджено', color: '#7B52AB', bg: '#EEE8F5' },
+  '2': { label: 'Очікує', color: '#EAB308', bg: '#FEFCE8' },
+  '3': { label: 'Завершено', color: '#48BB78', bg: '#F0FFF4' },
+  '4': { label: 'Скасовано', color: '#E24B4A', bg: '#FEF2F2' },
+  '5': { label: 'Не прийшов', color: '#9CA3AF', bg: '#F5F5F5' },
+  '6': { label: 'Підтверджено', color: '#7B52AB', bg: '#EEE8F5' },
+  '7': { label: 'Очікує оплати', color: '#E05A3A', bg: '#FDF3F0' },
+  '21': { label: 'Нагадування надіслано', color: '#6B7280', bg: '#F5F5F5' },
+  confirmed: { label: 'Підтверджено', color: '#7B52AB', bg: '#EEE8F5' },
+  completed: { label: 'Завершено', color: '#48BB78', bg: '#F0FFF4' },
+  cancelled: { label: 'Скасовано', color: '#E24B4A', bg: '#FEF2F2' },
+  pending: { label: 'Очікує', color: '#EAB308', bg: '#FEFCE8' },
 };
+
+const DEFAULT_STATUS = { label: 'Невідомий', color: '#9CA3AF', bg: '#F5F5F5' };
 
 export default function VisitDetailScreen({ route }: Props) {
   const { visit } = route.params;
@@ -45,7 +50,7 @@ export default function VisitDetailScreen({ route }: Props) {
   };
 
   const isNew = visit.client_vizits === 0;
-  const statusInfo = STATUS_LABELS[visit.status] || { label: visit.status, type: 'default' as const };
+  const statusInfo = VISIT_STATUS[String(visit.status)] || { ...DEFAULT_STATUS, label: `Статус ${visit.status}` };
 
   const endTime = (() => {
     if (!visit.time || !visit.duration) return null;
@@ -109,7 +114,10 @@ export default function VisitDetailScreen({ route }: Props) {
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Статус</Text>
-          <Badge label={statusInfo.label} type={statusInfo.type} />
+          <View style={[styles.statusPill, { backgroundColor: statusInfo.bg }]}>
+            <View style={[styles.statusDot, { backgroundColor: statusInfo.color }]} />
+            <Text style={[styles.statusText, { color: statusInfo.color }]}>{statusInfo.label}</Text>
+          </View>
         </View>
       </ScrollView>
     </Animated.View>
@@ -208,5 +216,23 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     fontWeight: '500',
     color: COLORS.purple,
+  },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 20,
+    gap: SPACING.sm,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusText: {
+    ...TYPOGRAPHY.bodySmall,
+    fontWeight: '600',
   },
 });

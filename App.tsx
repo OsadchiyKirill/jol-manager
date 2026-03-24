@@ -10,15 +10,17 @@ import AppNavigator from './src/navigation/AppNavigator';
 import client from './src/api/client';
 import type { RootStackParamList } from './src/types';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+try {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+} catch {}
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
